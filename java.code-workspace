@@ -1,0 +1,12 @@
+{
+	"folders": [
+		{
+			"name": "container-files",
+			"path": ".devcontainer"
+		},
+		{
+			"name": "das_sample_java",
+			"path": "das_sample_java"
+		}
+	],
+}

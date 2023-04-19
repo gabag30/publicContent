@@ -1,0 +1,35 @@
+// For format details, see https://aka.ms/vscode-remote/devcontainer.json or this file's README at:
+// https://github.com/microsoft/vscode-dev-containers/tree/v0.106.0/containers/docker-in-docker
+{
+	"name": "java_code",
+	"dockerFile": "Dockerfile",
+	"mounts": [
+		"source=/var/run/docker.sock,target=/var/run/docker.sock,type=bind",
+		//please check the following folders exists in your machine
+		"source=${localEnv:HOME}${localEnv:USERPROFILE}/.aws,target=/home/vscode/.aws,type=bind",
+		"source=${localEnv:HOME}${localEnv:USERPROFILE}/.cdk,target=/home/vscode/.cdk,type=bind",
+		"source=${localEnv:HOME}${localEnv:USERPROFILE}/.m2,target=/home/vscode/.m2,type=bind",
+		"source=${localEnv:HOME}${localEnv:USERPROFILE}/.aws,target=/root/.aws,type=bind",
+		"source=${localEnv:HOME}${localEnv:USERPROFILE}/.cdk,target=/root/.cdk,type=bind",
+		// following line is to have the vscode extensions available in the container, even after rebuildings
+		"source=vscode-extensions,target=/home/vscode/.vscode-server-insiders/extensions,type=volume",
+	],
+	// Set *default* container specific settings.json values on container create.
+	"settings": {
+		"terminal.integrated.shell.linux": "/bin/bash"
+	},
+	// Add the IDs of extensions you want installed when the container is created.
+	"extensions": [
+		"GitHub.copilot",
+		"vscjava.vscode-java-debug",
+		"vscjava.vscode-java-pack"
+	],
+	// Use 'forwardPorts' to make a list of ports inside the container available locally.
+	// "forwardPorts": [],
+	// Use 'postCreateCommand' to run commands after the container is created.
+	// "postCreateCommand": "docker --version",
+	// Uncomment when using a ptrace-based debugger like C++, Go, and Rust
+	// "runArgs": [ "--cap-add=SYS_PTRACE", "--security-opt", "seccomp=unconfined" ],
+	// Uncomment to connect as a non-root user. See https://aka.ms/vscode-remote/containers/non-root.
+	"remoteUser": "vscode"
+}
