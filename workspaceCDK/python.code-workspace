@@ -1,0 +1,36 @@
+{
+	"folders": [
+		{
+			"name": ".devcontainer",
+			"path": ".devcontainer"
+		},
+		{
+			"name": "environment",
+			"path": "environment"
+		},
+		{
+			"name": "case",
+			"path": "case"
+		},
+		{
+			"name": "das_smoke_test",
+			"path": "das_smoke_test"
+		},
+		{
+			"name": "cherwell_report",
+			"path": "cherwell_report"
+		},
+		{
+			"name": "pds_ec2_resources",
+			"path": "pds_ec2_resources"
+		},
+		{
+			"name": "pds_rds_resources",
+			"path": "pds_rds_resources"
+		},
+		{
+			"name": "WikiUpdate",
+			"path": "WikiUpdate"
+		}
+	],
+}
