@@ -43,7 +43,7 @@ public class GetFileFromDas {
                 .build();
 
         MediaType mediaType = MediaType.parse("application/json");
-        String requestBody = String.format("{\n   \"documentKindCategory\": \"%s\",\n  \"documentNumber\": \"%s\",\n  \"documentDate\": \"%s\",\n  \"osfAckId\": \"%s\",\n}\n\n", documentCategory, documentNumber, documentDate, osfAckId);
+        String requestBody = String.format("{\n   \"documentKindCategory\": \"%s\",\n  \"documentNumber\": \"%s\",\n  \"documentDate\": \"%s\",\n  \"osfAckId\": \"%s\"\n}\n\n", documentKindCategory, documentNumber, documentDate, osfAckId);
         RequestBody body = RequestBody.create(mediaType, requestBody);
         Request request = new Request.Builder()
                 .url(url)
@@ -54,12 +54,12 @@ public class GetFileFromDas {
 
         Response response = client.newCall(request).execute();
         String responseBody = response.body().string();
-        logger.info(responseBody);
+        //logger.info(responseBody);
 
         if (response.isSuccessful()) {
             JSONObject jsonObject = new JSONObject(responseBody);
-            String requestAckId = jsonObject.optString("requestAckId");
-            return requestAckId;
+            String downloadUrl = jsonObject.optString("fileDownloadUrl");
+            return downloadUrl;
         } else {
             logger.error(String.format("Failed to register request. Response status: %d", response.code()));
             logger.error(String.format("Response body: %s", responseBody));

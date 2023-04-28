@@ -43,7 +43,7 @@ public class GetOsfAckId {
                 .build();
 
         MediaType mediaType = MediaType.parse("application/json");
-        String requestBody = String.format("{\n  \"operationCategory\": \"retrieval\",\n  \"documentKindCategory\": \"%s\",\n  \"documentNumber\": \"%s\",\n  \"documentDate\": \"%s\",\n  \"dasAccessCode\": \"%s\",\n  \"applicationCategory\": null,\n  \"applicationNumber\": null,\n  \"applicationFilingDate\": null,\n}\n\n", documentCategory, documentNumber, documentDate, dasAccessCode);
+        String requestBody = String.format("{\n  \"operationCategory\": \"retrieval\",\n  \"documentKindCategory\": \"%s\",\n  \"documentNumber\": \"%s\",\n  \"documentDate\": \"%s\",\n  \"dasAccessCode\": \"%s\",\n  \"applicationCategory\": null,\n  \"applicationNumber\": null,\n  \"applicationFilingDate\": null\n}\n\n", documentCategory, documentNumber, documentDate, dasAccessCode);
         RequestBody body = RequestBody.create(mediaType, requestBody);
         Request request = new Request.Builder()
                 .url(url)
@@ -54,7 +54,7 @@ public class GetOsfAckId {
 
         Response response = client.newCall(request).execute();
         String responseBody = response.body().string();
-        logger.info(responseBody);
+        //logger.info(responseBody);
 
         if (response.isSuccessful()) {
             JSONObject jsonObject = new JSONObject(responseBody);

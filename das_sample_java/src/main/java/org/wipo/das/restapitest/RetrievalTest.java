@@ -3,7 +3,6 @@ package org.wipo.das.restapitest;
 import com.opencsv.CSVReader;
 import com.opencsv.CSVWriter;
 import com.opencsv.exceptions.CsvException;
-import org.apache.commons.cli.*;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.wipo.das.requests.*;
@@ -14,17 +13,23 @@ import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.util.Properties;
+import java.util.Arrays;
+import java.io.File;
+import java.io.FileOutputStream;
+import java.io.InputStream;
+import java.net.URL;
+import java.net.URLConnection;
+import java.security.NoSuchAlgorithmException;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.JsonNode;
-import java.security.NoSuchAlgorithmException;
 
 public class RetrievalTest {
 
     private static final Logger logger = ConfigManager.getLogger();
     private static ConfigManager myConfigManager;
 
-    public static void main(String[] args) throws IOException, CsvException, NoSuchAlgorithmException, InterruptedException, Exception {
+    public static void main(String[] args) throws IOException, CsvException, NoSuchAlgorithmException, InterruptedException {
         if (args.length < 2) {
             System.err.println("Usage: java Main <config_file_path> <csv_file_path>");
             System.exit(1);
@@ -45,15 +50,13 @@ public class RetrievalTest {
         }
         logger.info("Authorization token retrieved successfully.");
 
-        
         String dasEndPoint = myConfigManager.getConfig().getProperty("url");
-
 
         String[][] csvData = myConfigManager.getCsvData();
 
-        int rowCounter = 1; // Initialize counter variable to 1
-        // Process each row in the CSV data
-        for (String[] nextLine : Arrays.copyOfRange(csvData, 1, csvData.length) ){
+        int rowCounter = 1;
+        for (String[] nextLine : Arrays.copyOfRange(csvData, 1, csvData.length)) {
+        
             String priorityNumber = nextLine[0];
             String priorityDate = nextLine[1];
             String documentCategory = nextLine[2];
@@ -71,17 +74,66 @@ public class RetrievalTest {
             // check if the ack was already requested (but file was not downloaded)
 
             if (ackId == null || ackId.isEmpty()) {
-
-                
                 // Get the acknowledgment Id for the retrieval of the file
+                //logger.warn(documentCategory +"_"+                        priorityNumber+"_"+ priorityDate+"_"+ dasCode);
                 GetOsfAckId getOsfAckId = new GetOsfAckId(dasEndPoint, authToken, documentCategory,
                         priorityNumber, priorityDate, dasCode);
 
                 // Register retrieval
                 ackId = getOsfAckId.getAck();
                 logger.warn("File registered with AckId: " + ackId);
-                
+                if (ackId == null || ackId.isEmpty()) {
+                    myConfigManager.getLogger().error("Failed retrieve the ackId");
+                    rowCounter++; // Increment the counter variable by 1 with each iteration
+                    continue;
+                }
+                try {
+                    // Update fileId and registered and ackId in the specified row
+                    myConfigManager.updateCsvData(rowCounter, new Integer(myConfigManager.getConfig().getProperty("columnOsfAckId")), ackId);
+
+                    // Log the update
+                    myConfigManager.getLogger().info("CSV file updated successfully");
+
+                } catch (Exception e) {
+                    myConfigManager.getLogger().error("Failed to update CSV file", e);
+                    System.exit(1);
+                }  
             }
+            //going to get the url for the download
+            GetFileFromDas getFileFromDas  = new GetFileFromDas(dasEndPoint, authToken, documentCategory,
+                    priorityNumber, priorityDate, ackId);
+
+            // get the url
+            String downloadUrl = getFileFromDas.getUrl();
+            logger.info("Url to download the file: " + downloadUrl);
+            
+            if (downloadUrl == null || downloadUrl.isEmpty()) {
+                logger.error("Failed retrieve the url");
+                rowCounter++; // Increment the counter variable by 1 with each iteration
+                continue;
+            }
+            try {
+                downloadFile(downloadUrl,priorityNumber+"_"+priorityDate);
+            } catch (Exception e) {
+                logger.error("Failed to download the  file, let's try next time", e);
+                rowCounter++;
+                continue;
+            } 
+            
+            try {
+                // Update fileId and registered and ackId in the specified row
+                myConfigManager.updateCsvData(rowCounter, new Integer(myConfigManager.getConfig().getProperty("columnDownloaded")), "true");
+
+                // Log the update
+                logger.info("CSV file updated successfully");
+
+            } catch (Exception e) {
+                logger.error("Failed to update CSV file", e);
+                rowCounter++;
+                continue;
+            } 
+
+
 
             // check if file is ready to download:
 
@@ -206,22 +258,29 @@ public class RetrievalTest {
         }
     }
 
-    public static void updateCsvFile(ConfigManager configManager, int row, int columnFileId, String fileId, int columnRegistered, String registered, int columnAckId, String ackId) throws Exception {
-        try {
+        public static void downloadFile(String downloadUrl, String filePrefix) throws IOException {
+        URL url = new URL(downloadUrl);
+        URLConnection connection = url.openConnection();
+        InputStream inputStream = connection.getInputStream();
 
-            // Update fileId and registered and ackId in the specified row
-            configManager.updateCsvData(row, columnFileId, fileId);
-            configManager.updateCsvData(row, columnRegistered, registered);
-            configManager.updateCsvData(row, columnAckId, ackId);
+        File dir = new File(myConfigManager.getConfig().getProperty("localFolder"));
+        dir.mkdirs();
 
-            // Log the update
-            configManager.getLogger().info("CSV file updated successfully");
+        String localFilePath = dir.getAbsolutePath() + File.separator + filePrefix.replace("/", "_") + ".pdf";
+        FileOutputStream outputStream = new FileOutputStream(localFilePath);
 
-        } catch (Exception e) {
-            ConfigManager.getLogger().error("Failed to update CSV file", e);
-            System.exit(1);
+        byte[] buffer = new byte[4096];
+        int bytesRead;
+        while ((bytesRead = inputStream.read(buffer)) != -1) {
+            outputStream.write(buffer, 0, bytesRead);
         }
+
+        outputStream.close();
+        inputStream.close();
+        logger.info("file downloaded as: " + localFilePath);
     }
+
+
 
 
         

@@ -20,7 +20,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.JsonNode;
 import java.security.NoSuchAlgorithmException;
 
-public class RegistrationTest {
+public class CertificateDownloadTest {
 
     private static final Logger logger = ConfigManager.getLogger();
     private static ConfigManager myConfigManager;
@@ -48,85 +48,27 @@ public class RegistrationTest {
 
         String[][] csvData = myConfigManager.getCsvData();
 
+        String dasEndPoint = myConfigManager.getConfig().getProperty("url");
+        String downloadLocation = myConfigManager.getConfig().getProperty("localFolder");
+
+
         int rowCounter = 1; // Initialize counter variable to 1
         // Process each row in the CSV data
         for (String[] nextLine : Arrays.copyOfRange(csvData, 1, csvData.length) ){
-
-            String fileReference = nextLine[0];
-            String fileLocation = nextLine[1];
-            String applicationNumber = nextLine[2];
-            String applicationDate = nextLine[3];
             String priorityNumber = nextLine[4];
             String priorityDate = nextLine[5];
             String documentCategory = nextLine[6];
-            String applicationCategory = nextLine[7];
+
             String dasCode = nextLine[8];
-            String fileId = nextLine[9];
             String registered = nextLine[10];
-            String ackId = nextLine[11];
 
             // Skip already registered files
             if (registered.equalsIgnoreCase("true")) {
-                logger.info(String.format("File '%s' already registered.", fileReference));
-                continue;
-            }
-
-            // Calculate the SHA-256 checksum of the file
-            logger.info("Processing fileReference: " + fileReference);
-            String sha256Checksum = calculateSha256(fileLocation);
-            logger.info("SHA-256 checksum: " + sha256Checksum);
-
-            // Retrieve the fileId and uploadUrl
-            String dasEndPoint = myConfigManager.getConfig().getProperty("url");
-
-            ObtainFileIdAndUploadUrl obtainFileIdAndUploadUrl = new ObtainFileIdAndUploadUrl(dasEndPoint, authToken, fileReference, "pdf", sha256Checksum);
-            String[] fileIdAndUrl = obtainFileIdAndUploadUrl.getFileIdAndUploadUrl();
-
-            if (fileIdAndUrl != null) {
-
-                fileId = fileIdAndUrl[0];
-                String uploadUrl = fileIdAndUrl[1];
-
-                logger.warn("Got fileId: " + fileId);
-                logger.warn("Got uploadUrl: " + uploadUrl);
-
-                // Upload the file
-                logger.info("going to upload the file ");
-                uploadFile(uploadUrl, fileLocation, dasEndPoint, fileId);
-                logger.info("File uploaded successfully!, continue for registration");
-
-                // Check the status of the file upload
-                CheckFileStatus checkFileStatus = new CheckFileStatus(dasEndPoint, authToken, fileId);
-                String status;
-                do {
-                    status = checkFileStatus.getFileStatus();
-                    logger.info(String.format("File upload status: %s", status));
-                    Thread.sleep(5000); // Wait 5 seconds before checking again
-                } while (status.equals("processing"));
-
-                if (status.equals("ACCEPTED")) {
-                    logger.info("File was accepted!");
-
-                    // Create RegisterFile object
-                    RegisterFile registerFile = new RegisterFile(dasEndPoint, authToken, documentCategory,
-                            priorityNumber, priorityDate, dasCode,
-                            applicationCategory, applicationNumber, applicationDate, fileId);
-
-                    // Register file
-                    String acknowledgeId = registerFile.registerFile();
-                    logger.warn("File registered with AckId: " + acknowledgeId);
-                    updateCsvFile(rowCounter, new Integer(myConfigManager.getConfig().getProperty("columnFileId")), fileId,
-                            new Integer(myConfigManager.getConfig().getProperty("columnRegistered")), "true",
-                            new Integer(myConfigManager.getConfig().getProperty("columnAckId")), acknowledgeId);
-
-                        
-
-                } else if (status.equals("REJECTED")) {
-                    logger.error("File was rejected!");
-                }
-            } else {
-                logger.error("Failed to obtain file ID and upload URL.");
-                System.exit(1);
+                // download registration certificate:
+                GetCertificateFromDas getCertificateFromDas = new GetCertificateFromDas (dasEndPoint, authToken, documentCategory,
+                priorityNumber, priorityDate, dasCode,downloadLocation, 
+                "certificate_"+priorityNumber.replace("/","_")+"_"+priorityDate +".pdf");
+                getCertificateFromDas.getCertificate();
             }
 
             rowCounter++; // Increment the counter variable by 1 with each iteration

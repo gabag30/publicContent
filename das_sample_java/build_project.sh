@@ -1,1 +1,1 @@
-mvn -Dmaven.wagon.http.ssl.insecure=true clean package
+mvn -Dmaven.wagon.http.ssl.insecure=true -q clean package
