@@ -24,11 +24,26 @@ import java.security.NoSuchAlgorithmException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.JsonNode;
 
+/**
+ * Demonstrates the Retrieval flow:
+ * <ol>
+ *   <li>OAuth token via client assertion</li>
+ *   <li>Optionally register retrieval to obtain {@code requestAckId}</li>
+ *   <li>Obtain pre-signed download URL</li>
+ *   <li>Download the PDF</li>
+ *   <li>Update CSV with results</li>
+ * </ol>
+ */
 public class RetrievalTest {
 
     private static final Logger logger = ConfigManager.getLogger();
     private static ConfigManager myConfigManager;
 
+    /**
+     * Entry point for the Retrieval flow.
+     *
+     * @param args {@code [0]} path to {@code config.properties}, {@code [1]} path to {@code retrieval_test.csv}
+     */
     public static void main(String[] args) throws IOException, CsvException, NoSuchAlgorithmException, InterruptedException {
         if (args.length < 2) {
             System.err.println("Usage: java Main <config_file_path> <csv_file_path>");
@@ -192,6 +207,11 @@ public class RetrievalTest {
         }
     }
 
+    /**
+     * Builds a client assertion, exchanges it for an access token, and returns the token string.
+     *
+     * @return OAuth2 access token string or {@code null} on error.
+     */
     private static String getAuthorizationToken() {
         try {
             JwtAssertionGenerator jwtAssertionGenerator = new JwtAssertionGenerator(myConfigManager);
@@ -216,6 +236,9 @@ public class RetrievalTest {
     }
 
 
+    /**
+     * Computes the SHA-256 checksum of the file.
+     */
     private static String calculateSha256(String filePath) throws IOException,NoSuchAlgorithmException {
         return ObtainFileIdAndUploadUrl.getFileChecksum(filePath);
     } 
@@ -258,6 +281,9 @@ public class RetrievalTest {
         }
     }
 
+        /**
+         * Streams the file from the pre-signed URL and saves it to the local folder configured in properties.
+         */
         public static void downloadFile(String downloadUrl, String filePrefix) throws IOException {
         URL url = new URL(downloadUrl);
         URLConnection connection = url.openConnection();

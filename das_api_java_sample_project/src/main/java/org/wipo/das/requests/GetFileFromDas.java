@@ -9,6 +9,22 @@ import org.apache.logging.log4j.Logger;
 import org.json.JSONObject;
 import org.wipo.das.restapitest.ConfigManager;
 
+/**
+ * Obtains a pre-signed download URL for a document previously registered for retrieval.
+ *
+ * <p>Endpoint: {@code POST {das}/files/url-downloads}
+ * <br>Headers: {@code Authorization: Bearer <token>}, {@code Content-Type: application/json}
+ * <br>Body:
+ * <pre>
+ * {
+ *   "documentKindCategory": "<document_category>",
+ *   "documentNumber": "<priority_number>",
+ *   "documentDate": "<priority_date>",
+ *   "osfAckId": "<requestAckId>"
+ * }
+ * </pre>
+ * Success: JSON with {@code fileDownloadUrl}.
+ */
 public class GetFileFromDas {
 
     private static final Logger logger = ConfigManager.getLogger();
@@ -21,6 +37,14 @@ public class GetFileFromDas {
     private final String osfAckId;
 
 
+    /**
+     * @param dasEndpoint Base DAS requests URL (e.g. {@code .../das-api/v1/requests}).
+     * @param authorizationToken OAuth2 bearer token.
+     * @param documentKindCategory Document kind category (e.g., {@code patent}).
+     * @param documentNumber Priority or document number.
+     * @param documentDate Document date in ISO-8601 (YYYY-MM-DD).
+     * @param osfAckId Acknowledgment id returned by {@code POST /retrievals}.
+     */
     public GetFileFromDas(String dasEndpoint, String authorizationToken, String documentKindCategory,
             String documentNumber, String documentDate, String osfAckId
             ) {
@@ -32,6 +56,12 @@ public class GetFileFromDas {
         this.osfAckId = osfAckId;
         }
 
+    /**
+     * Requests a pre-signed download URL for the document.
+     *
+     * @return {@code fileDownloadUrl} string on success; {@code null} otherwise (see logs).
+     * @throws IOException if the HTTP request fails.
+     */
     public String getUrl() throws IOException {
         logger.info("Registering retrieval request...");
 

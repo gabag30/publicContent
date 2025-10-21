@@ -1,0 +1,44 @@
+@startuml
+title Retrieval Flow (Request + Download)
+
+actor User
+participant "RetrievalTest" as RT
+participant "JwtAssertionGenerator" as JWT
+participant "GetToken" as TOK
+participant "GetOsfAckId" as ACK
+participant "GetFileFromDas" as GFD
+participant "RetrievalTest.downloadFile" as DL
+participant "WIPO OAuth2 AS" as AS
+participant "WIPO DAS API" as DAS
+participant "Pre-signed Download Host" as DWHOST
+
+User -> RT: Run with config + CSV
+RT -> JWT: generateAssertion()
+JWT --> RT: client_assertion
+RT -> TOK: getAccessToken(assertion, issuer, scope)
+TOK -> AS: POST /access_token
+AS --> TOK: {access_token}
+TOK --> RT: token
+
+loop for each CSV row where downloaded != true
+  alt osf_ack_id missing
+    RT -> ACK: getAck()
+    ACK -> DAS: POST /requests/retrievals
+    DAS --> ACK: {requestAckId}
+    ACK --> RT: requestAckId
+    RT -> RT: Save osf_ack_id in CSV
+  end
+
+  RT -> GFD: getUrl()
+  GFD -> DAS: POST /requests/files/url-downloads
+  DAS --> GFD: {fileDownloadUrl}
+  GFD --> RT: fileDownloadUrl
+
+  RT -> DL: downloadFile(fileDownloadUrl, prefix)
+  DL -> DWHOST: GET fileDownloadUrl
+  DWHOST --> DL: 200 PDF bytes
+  DL --> RT: saved file
+  RT -> RT: Update CSV (downloaded=true)
+end
+
+@enduml

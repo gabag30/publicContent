@@ -12,6 +12,21 @@ import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.Properties;
 
+/**
+ * Requests a new {@code fileId} and a pre-signed {@code fileUploadUrl} for uploading a document.
+ *
+ * <p>Endpoint: {@code POST {das}/files/url-uploads}
+ * <br>Headers: {@code Authorization: Bearer <token>}, {@code Content-Type: application/json}, {@code Accept: application/json}
+ * <br>Body:
+ * <pre>
+ * {
+ *   "fileReference": "<name>",
+ *   "fileFormatCategory": "pdf",
+ *   "fileChecksum": "<sha256-hex>"
+ * }
+ * </pre>
+ * Success: returns JSON with {@code fileId} and {@code fileUploadUrl}.
+ */
 public class ObtainFileIdAndUploadUrl {
 
     private static final Logger logger = ConfigManager.getLogger();
@@ -22,6 +37,15 @@ public class ObtainFileIdAndUploadUrl {
     private final String url;
     private final String token;
 
+    /**
+     * Creates a request helper for the file-id + upload-url transaction.
+     *
+     * @param dasEndPoint Base DAS requests URL (e.g. {@code .../das-api/v1/requests}).
+     * @param authorizationToken OAuth2 bearer token.
+     * @param fileReference Client-defined file reference (typically derived from the filename).
+     * @param fileFormatCategory File format category (e.g., {@code pdf}).
+     * @param fileChecksum SHA-256 checksum (hex) of the file to be uploaded.
+     */
     public ObtainFileIdAndUploadUrl(String dasEndPoint, String authorizationToken, String fileReference, String fileFormatCategory, String fileChecksum) {
         this.fileReference = fileReference;
         this.fileFormatCategory = fileFormatCategory;
@@ -32,6 +56,12 @@ public class ObtainFileIdAndUploadUrl {
 
     }
 
+    /**
+     * Calls DAS to obtain a {@code fileId} and a pre-signed {@code fileUploadUrl}.
+     *
+     * @return array: index 0 = {@code fileId}, index 1 = {@code fileUploadUrl}; {@code null} if request failed (see logs).
+     * @throws IOException when the HTTP request fails or the response cannot be parsed.
+     */
     public String[] getFileIdAndUploadUrl() throws IOException {
         logger.info("Obtaining file ID and upload URL...");
         
@@ -77,6 +107,14 @@ public class ObtainFileIdAndUploadUrl {
         }
     }
 
+    /**
+     * Computes the SHA-256 checksum of the file at {@code filePath} and returns it in hex encoding.
+     *
+     * @param filePath path to the file.
+     * @return lowercase hex string of the SHA-256 digest.
+     * @throws NoSuchAlgorithmException if SHA-256 is unavailable.
+     * @throws IOException if the file cannot be read.
+     */
     public static String getFileChecksum(String filePath) throws NoSuchAlgorithmException, IOException {
         MessageDigest md = MessageDigest.getInstance("SHA-256");
         md.update(Files.readAllBytes(Paths.get(filePath)));
@@ -88,6 +126,12 @@ public class ObtainFileIdAndUploadUrl {
         return sb.toString();
     }
 
+    /**
+     * Derives a file reference from the filename (basename without extension).
+     *
+     * @param filePath path to the file.
+     * @return file reference string.
+     */
     public static String getFileReference(String filePath) {
         String[] tokens = filePath.split("/");
         String fileName = tokens[tokens.length - 1];

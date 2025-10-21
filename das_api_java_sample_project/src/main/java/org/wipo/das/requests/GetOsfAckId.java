@@ -9,6 +9,26 @@ import org.apache.logging.log4j.Logger;
 import org.json.JSONObject;
 import org.wipo.das.restapitest.ConfigManager;
 
+/**
+ * Registers a retrieval request and returns the acknowledgment id (OSF ack id).
+ *
+ * <p>Endpoint: {@code POST {das}/retrievals}
+ * <br>Headers: {@code Authorization: Bearer <token>}, {@code Content-Type: application/json}
+ * <br>Body:
+ * <pre>
+ * {
+ *   "operationCategory": "retrieval",
+ *   "documentKindCategory": "<document_category>",
+ *   "documentNumber": "<priority_number>",
+ *   "documentDate": "<priority_date>",
+ *   "dasAccessCode": "<das_code>",
+ *   "applicationCategory": null,
+ *   "applicationNumber": null,
+ *   "applicationFilingDate": null
+ * }
+ * </pre>
+ * Success: JSON with {@code requestAckId}.
+ */
 public class GetOsfAckId {
 
     private static final Logger logger = ConfigManager.getLogger();
@@ -21,6 +41,14 @@ public class GetOsfAckId {
     private final String dasAccessCode;
 
 
+    /**
+     * @param dasEndpoint Base DAS requests URL (e.g. {@code .../das-api/v1/requests}).
+     * @param authorizationToken OAuth2 bearer token.
+     * @param documentCategory Document kind category (e.g., {@code patent}).
+     * @param documentNumber Priority or document number.
+     * @param documentDate Document date in ISO-8601 (YYYY-MM-DD).
+     * @param dasAccessCode DAS access code.
+     */
     public GetOsfAckId(String dasEndpoint, String authorizationToken, String documentCategory,
             String documentNumber, String documentDate, String dasAccessCode
             ) {
@@ -32,6 +60,12 @@ public class GetOsfAckId {
         this.dasAccessCode = dasAccessCode;
         }
 
+    /**
+     * Submits the retrieval request and returns the acknowledgment id.
+     *
+     * @return {@code requestAckId} on success; {@code null} otherwise (see logs).
+     * @throws IOException on HTTP failures.
+     */
     public String getAck() throws IOException {
         logger.info("Registering retrieval request...");
 

@@ -1,0 +1,52 @@
+@startuml
+title Registration Flow (Upload + Register)
+
+actor User
+participant "RegistrationTest" as RT
+participant "JwtAssertionGenerator" as JWT
+participant "GetToken" as TOK
+participant "ObtainFileIdAndUploadUrl" as OBF
+participant "UploadFileToDas" as UPL
+participant "CheckFileStatus" as CFS
+participant "RegisterFile" as REG
+participant "WIPO OAuth2 AS" as AS
+participant "WIPO DAS API" as DAS
+participant "Pre-signed Upload Host" as UPHOST
+
+User -> RT: Run with config + CSV
+RT -> JWT: generateAssertion()
+JWT --> RT: client_assertion (ES256)
+RT -> TOK: getAccessToken(assertion, issuer, scope)
+TOK -> AS: POST /access_token (client_credentials)
+AS --> TOK: {access_token, expires_in}
+TOK --> RT: token
+
+loop for each CSV row where registered != true
+  RT -> OBF: getFileIdAndUploadUrl()
+  OBF -> DAS: POST /requests/files/url-uploads
+  DAS --> OBF: {fileId, fileUploadUrl}
+  OBF --> RT: fileId, fileUploadUrl
+
+  RT -> UPL: uploadMyFile()
+  UPL -> UPHOST: PUT fileUploadUrl (PDF)
+  UPHOST --> UPL: 200
+
+  RT -> CFS: getFileStatus()
+  loop every 5s
+    CFS -> DAS: GET /requests/files?fileId=...
+    DAS --> CFS: {fileStatusCategory | error}
+  end
+  CFS --> RT: ACCEPTED | REJECTED
+
+  alt ACCEPTED
+    RT -> REG: registerFile()
+    REG -> DAS: POST /requests/registrations
+    DAS --> REG: {requestAckId}
+    REG --> RT: requestAckId
+    RT -> RT: Update CSV (file_id, registered=true, ack_id)
+  else REJECTED
+    RT -> RT: Log and continue
+  end
+end
+
+@enduml

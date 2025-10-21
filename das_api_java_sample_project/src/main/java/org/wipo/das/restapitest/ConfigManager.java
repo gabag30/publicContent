@@ -14,6 +14,16 @@ import com.opencsv.CSVReaderBuilder;
 import com.opencsv.CSVWriter;
 import com.opencsv.exceptions.CsvException;
 
+/**
+ * Centralized configuration and CSV state manager.
+ *
+ * <p>Responsibilities:
+ * <ul>
+ *   <li>Loads {@code config/config.properties} (OAuth, DAS endpoint, CSV column indexes, logging)</li>
+ *   <li>Configures Log4j 2 using the path provided by {@code log4jConfigPath}</li>
+ *   <li>Loads a CSV file into memory and persists updates back to disk</li>
+ * </ul>
+ */
 public class ConfigManager {
 
     private Properties config;
@@ -22,7 +32,13 @@ public class ConfigManager {
 
     private static final Logger logger = LogManager.getLogger(ConfigManager.class);
 
-    // Make the constructor public and use the class name as the logger parameter
+    /**
+     * Loads properties and CSV data; initializes Log4j.
+     *
+     * @param config_file_path path to {@code config.properties}.
+     * @param csv_file_path path to a CSV used by the selected flow.
+     * @throws CsvException if the CSV cannot be parsed.
+     */
     public ConfigManager(String config_file_path, String csv_file_path) throws CsvException {
         // Load configuration
         try {
@@ -64,18 +80,34 @@ public class ConfigManager {
         }
     }
 
+    /**
+     * @return loaded configuration properties.
+     */
     public Properties getConfig() {
         return config;
     }
 
+    /**
+     * @return entire CSV content as a 2D array (row-major), header included.
+     */
     public String[][] getCsvData() {
         return csvData;
     }
 
+    /**
+     * @return the path to the associated CSV file on disk.
+     */
     public String getCsvPath() {
         return csvPath;
     }
 
+    /**
+     * Updates a single cell and writes the whole CSV back to disk.
+     *
+     * @param row zero-based row index (including header row at index 0).
+     * @param column zero-based column index.
+     * @param value new value to persist.
+     */
     public void updateCsvData(int row, int column, String value) {
         csvData[row][column] = value;
         // Update CSV file
@@ -92,6 +124,9 @@ public class ConfigManager {
         }
     }
 
+    /**
+     * @return shared Log4j 2 logger.
+     */
     public static Logger getLogger () {
         return logger;
     }

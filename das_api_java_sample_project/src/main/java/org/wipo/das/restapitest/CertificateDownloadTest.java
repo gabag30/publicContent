@@ -20,11 +20,23 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.JsonNode;
 import java.security.NoSuchAlgorithmException;
 
+/**
+ * Demonstrates downloading registration certificates for rows already marked as registered.
+ * <ol>
+ *   <li>OAuth token via client assertion</li>
+ *   <li>GET certificate PDF and save to {@code localFolder}</li>
+ * </ol>
+ */
 public class CertificateDownloadTest {
 
     private static final Logger logger = ConfigManager.getLogger();
     private static ConfigManager myConfigManager;
 
+    /**
+     * Entry point for the Certificate Download flow.
+     *
+     * @param args {@code [0]} path to {@code config.properties}, {@code [1]} path to {@code registration_test.csv}
+     */
     public static void main(String[] args) throws IOException, CsvException, NoSuchAlgorithmException, InterruptedException, Exception {
         if (args.length < 2) {
             System.err.println("Usage: java Main <config_file_path> <csv_file_path>");
@@ -75,6 +87,11 @@ public class CertificateDownloadTest {
         }
     }
 
+    /**
+     * Builds a client assertion, exchanges it for an access token, and returns the token string.
+     *
+     * @return OAuth2 access token string or {@code null} on error.
+     */
     private static String getAuthorizationToken() {
         try {
             JwtAssertionGenerator jwtAssertionGenerator = new JwtAssertionGenerator(myConfigManager);
@@ -99,11 +116,17 @@ public class CertificateDownloadTest {
     }
 
 
+    /**
+     * Computes the SHA-256 checksum of the file.
+     */
     private static String calculateSha256(String filePath) throws IOException,NoSuchAlgorithmException {
         return ObtainFileIdAndUploadUrl.getFileChecksum(filePath);
     } 
 
 
+    /**
+     * Upload helper (not used in this flow), retained for parity with other samples.
+     */
     private static void uploadFile(String uploadUrl, String fileLocation, String dasEndPoint, String fileId) {
         UploadFileToDas uploadFileToDas = new UploadFileToDas(uploadUrl, fileLocation);
 
@@ -141,6 +164,9 @@ public class CertificateDownloadTest {
         }
     }
 
+    /**
+     * Helper to update registration CSV values (not used in this flow).
+     */
     public static void updateCsvFile(int row, int columnFileId, String fileId, int columnRegistered, String registered, int columnAckId, String ackId) throws Exception {
         try {
 

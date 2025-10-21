@@ -1,0 +1,27 @@
+@startuml
+title Certificate Download Flow
+
+actor User
+participant "CertificateDownloadTest" as CDT
+participant "JwtAssertionGenerator" as JWT
+participant "GetToken" as TOK
+participant "GetCertificateFromDas" as CERT
+participant "WIPO OAuth2 AS" as AS
+participant "WIPO DAS API" as DAS
+
+User -> CDT: Run with config + registration CSV
+CDT -> JWT: generateAssertion()
+JWT --> CDT: client_assertion
+CDT -> TOK: getAccessToken(assertion, issuer, scope)
+TOK -> AS: POST /access_token
+AS --> TOK: {access_token}
+TOK --> CDT: token
+
+loop for each CSV row where registered == true
+  CDT -> CERT: getCertificate()
+  CERT -> DAS: GET /requests/registrations/certificates
+  DAS --> CERT: PDF bytes (200)
+  CERT --> CDT: saved file
+end
+
+@enduml

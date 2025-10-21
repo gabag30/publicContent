@@ -8,6 +8,19 @@ import org.wipo.das.restapitest.ConfigManager;
 import java.io.IOException;
 import java.util.Properties;
 
+/**
+ * Polls the DAS API for the processing status of an uploaded file.
+ *
+ * <p>Endpoint: {@code GET {das}/files?fileId=<fileId>}
+ * <br>Headers: {@code Authorization: Bearer <token>}
+ * <br>Response fields used:
+ * <ul>
+ *   <li>{@code fileSizeQuantity} – presence indicates processing finished</li>
+ *   <li>{@code fileStatusCategory} – implies acceptance</li>
+ *   <li>{@code error} – indicates rejection</li>
+ * </ul>
+ * Behavior: polls every 5 seconds until status is determined.
+ */
 public class CheckFileStatus {
 
     private static final Logger logger = ConfigManager.getLogger();
@@ -16,12 +29,25 @@ public class CheckFileStatus {
     private final String url;
     private final String token;
 
+    /**
+     * Creates a polling helper to check the processing status of a file.
+     *
+     * @param dasEndPoint Base DAS requests URL (e.g. {@code .../das-api/v1/requests}).
+     * @param authorizationToken OAuth2 bearer token.
+     * @param fileId identifier returned by {@code /files/url-uploads}.
+     */
     public CheckFileStatus(String dasEndPoint, String authorizationToken, String fileId) {
         this.fileId = fileId;
         this.url = dasEndPoint+"/files";
         this.token = authorizationToken;
     }
 
+    /**
+     * Polls DAS until a terminal status is reached.
+     *
+     * @return {@code "ACCEPTED"} or {@code "REJECTED"} when determined.
+     * @throws IOException on HTTP failures or response read errors.
+     */
     public String getFileStatus() throws IOException {
         logger.info("Checking file status...");
         String fileStatus = null;

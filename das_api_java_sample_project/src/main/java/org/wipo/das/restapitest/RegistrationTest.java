@@ -20,11 +20,27 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.JsonNode;
 import java.security.NoSuchAlgorithmException;
 
+/**
+ * Demonstrates the end-to-end Registration flow:
+ * <ol>
+ *   <li>OAuth token via client assertion</li>
+ *   <li>Obtain {@code fileId} and pre-signed upload URL</li>
+ *   <li>Upload the PDF</li>
+ *   <li>Poll file processing status</li>
+ *   <li>Register the document and capture {@code requestAckId}</li>
+ *   <li>Update CSV with results</li>
+ * </ol>
+ */
 public class RegistrationTest {
 
     private static final Logger logger = ConfigManager.getLogger();
     private static ConfigManager myConfigManager;
 
+    /**
+     * Entry point for the Registration flow.
+     *
+     * @param args {@code [0]} path to {@code config.properties}, {@code [1]} path to {@code registration_test.csv}
+     */
     public static void main(String[] args) throws IOException, CsvException, NoSuchAlgorithmException, InterruptedException, Exception {
         if (args.length < 2) {
             System.err.println("Usage: java Main <config_file_path> <csv_file_path>");
@@ -133,6 +149,11 @@ public class RegistrationTest {
         }
     }
 
+    /**
+     * Builds a client assertion, exchanges it for an access token, and returns the token string.
+     *
+     * @return OAuth2 access token string or {@code null} on error.
+     */
     private static String getAuthorizationToken() {
         try {
             JwtAssertionGenerator jwtAssertionGenerator = new JwtAssertionGenerator(myConfigManager);
@@ -157,11 +178,17 @@ public class RegistrationTest {
     }
 
 
+    /**
+     * Computes the SHA-256 checksum of the file.
+     */
     private static String calculateSha256(String filePath) throws IOException,NoSuchAlgorithmException {
         return ObtainFileIdAndUploadUrl.getFileChecksum(filePath);
     } 
 
 
+    /**
+     * Uploads a file using a pre-signed URL, auto-refreshing the URL if necessary.
+     */
     private static void uploadFile(String uploadUrl, String fileLocation, String dasEndPoint, String fileId) {
         UploadFileToDas uploadFileToDas = new UploadFileToDas(uploadUrl, fileLocation);
 
@@ -199,6 +226,9 @@ public class RegistrationTest {
         }
     }
 
+    /**
+     * Helper to update file id, registered flag, and ack id in the registration CSV.
+     */
     public static void updateCsvFile(int row, int columnFileId, String fileId, int columnRegistered, String registered, int columnAckId, String ackId) throws Exception {
         try {
 

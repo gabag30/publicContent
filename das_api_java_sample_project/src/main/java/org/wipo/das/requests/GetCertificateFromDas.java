@@ -13,6 +13,14 @@ import java.nio.file.Paths;
 
 
 
+/**
+ * Downloads a registration certificate PDF for a previously registered document.
+ *
+ * <p>Endpoint: {@code GET {das}/registrations/certificates}
+ * <br>Headers: {@code Authorization: Bearer <token>}, {@code Content-Type: application/pdf}
+ * <br>Query parameters: {@code documentKindCategory}, {@code documentNumber}, {@code documentDate}, {@code dasAccessCode}
+ * <br>Behavior: writes the response bytes to {@code outputFolderPath/outputFileName}.
+ */
 public class GetCertificateFromDas {
 
     private static final Logger logger = ConfigManager.getLogger();
@@ -27,6 +35,16 @@ public class GetCertificateFromDas {
     private final String outputFileName;
 
 
+    /**
+     * @param dasEndpoint Base DAS requests URL (e.g. {@code .../das-api/v1/requests}).
+     * @param authorizationToken OAuth2 bearer token.
+     * @param documentKindCategory Document kind category (e.g., {@code patent}).
+     * @param documentNumber Priority or document number.
+     * @param documentDate Document date in ISO-8601 (YYYY-MM-DD).
+     * @param dasAccessCode DAS access code linked to the registration.
+     * @param outputFolderPath Local folder to create if absent and where to save the PDF.
+     * @param outputFileName Target PDF filename.
+     */
     public GetCertificateFromDas(String dasEndpoint, String authorizationToken, String documentKindCategory,
             String documentNumber, String documentDate, String dasAccessCode,
             String outputFolderPath, String outputFileName) {
@@ -40,6 +58,12 @@ public class GetCertificateFromDas {
         this.outputFileName = outputFileName;
         }
 
+    /**
+     * Performs the certificate download request and writes the PDF to disk.
+     *
+     * @return {@code true} if the file was saved successfully; {@code false} otherwise.
+     * @throws IOException if networking fails or the output cannot be written.
+     */
     public boolean getCertificate() throws IOException {
         logger.info("Downloading certificate...");
         //System.out.println(token);
