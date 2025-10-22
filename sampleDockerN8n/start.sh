@@ -1,0 +1,1 @@
+ docker compose -p localai -f docker-compose.yml -f docker-compose.override.private.yml --profile cpu up -d
