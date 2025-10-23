@@ -3,4 +3,4 @@
 sampleDockerN8n/shared/*
 sampleDockerN8n/selfSignedCertificate/*
 sampleDockerN8n/pgadmin-backup/*
-sampleDockerN8n/n8n/*
+sampleDockerN8n/n8n/backup*
