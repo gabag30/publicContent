@@ -6,6 +6,7 @@ volumes:
   # caddy-data:
   # caddy-config:
   postgres_data:
+  pgadmin_data:
 
 x-n8n: &service-n8n
   image: n8nio/n8n:latest
@@ -18,6 +19,7 @@ x-n8n: &service-n8n
     - N8N_DIAGNOSTICS_ENABLED=false
     - N8N_PERSONALIZATION_ENABLED=false
     - N8N_ALLOW_EXTERNAL_MODULES=*
+    - N8N_ENFORCE_SETTINGS_FILE_PERMISSIONS=true
     - N8N_ENCRYPTION_KEY
     - N8N_USER_MANAGEMENT_JWT_SECRET
     - WEBHOOK_URL=${N8N_HOSTNAME:+https://}${N8N_HOSTNAME:-http://localhost:5678}
@@ -65,6 +67,22 @@ x-init-ollama: &init-ollama
       OLLAMA_HOST=ollama:11434 ollama pull nomic-embed-text
 
 services:
+  pgadmin-restore:
+    image: alpine:3.20
+    entrypoint: ["sh","-lc"]
+    command:
+      - |
+        set -e
+        if [ -d /backup ] && [ "$(ls -A /backup 2>/dev/null)" ]; then
+          echo "Restoring pgAdmin data from backup..."
+          cp -a /backup/. /data/
+          chown -R 5050:5050 /data || true
+        else
+          echo "No pgAdmin backup present; skipping restore."
+        fi
+    volumes:
+      - pgadmin_data:/data
+      - ./pgadmin-backup:/backup:ro
   open-webui:
     image: ghcr.io/open-webui/open-webui:main
     restart: unless-stopped
@@ -123,14 +141,17 @@ services:
     image: dpage/pgadmin4:latest
     restart: unless-stopped
     expose:
-      - 5050/tcp
+      - 80/tcp
     environment:
       PGADMIN_DEFAULT_EMAIL: admin@admin.com
       PGADMIN_DEFAULT_PASSWORD: admin
     volumes:
-      - ./pgadmin-data:/var/lib/pgadmin
+      - pgadmin_data:/var/lib/pgadmin
     depends_on:
-      - postgres
+      postgres:
+        condition: service_started
+      pgadmin-restore:
+        condition: service_completed_successfully
 
   ollama-cpu:
     profiles: ["cpu"]

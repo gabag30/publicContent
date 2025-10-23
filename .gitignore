@@ -1,2 +1,5 @@
 .DS_Store
 *.pem
+sampleDockerN8n/shared/*
+sampleDockerN8n/selfSignedCertificate/*
+sampleDockerN8n/pgadmin-backup/*
