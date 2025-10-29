@@ -1,0 +1,196 @@
+volumes:
+  n8n_data:
+  ollama_data:
+  openwebui_data:
+  postgres_data:
+  pgadmin_data:
+
+x-env:
+  n8n_env: &n8n_env
+    env_file:
+      - env/n8n.env
+    environment:
+      DB_TYPE: postgresdb
+      DB_POSTGRESDB_HOST: postgres
+      DB_POSTGRESDB_USER: ${POSTGRES_USER:-postgres}
+      DB_POSTGRESDB_PASSWORD: ${POSTGRES_PASSWORD}
+      DB_POSTGRESDB_DATABASE: ${POSTGRES_DB:-postgres}
+      N8N_DIAGNOSTICS_ENABLED: "false"
+      N8N_PERSONALIZATION_ENABLED: "false"
+      N8N_ALLOW_EXTERNAL_MODULES: "*"
+      N8N_ENFORCE_SETTINGS_FILE_PERMISSIONS: "true"
+      # Set WEBHOOK_URL in env/n8n.env when using TLS/ingress
+      # WEBHOOK_URL: https://n8n.example.com
+
+services:
+  postgres:
+    build:
+      context: ./docker/postgres
+    image: ${POSTGRES_IMAGE:-local/prod-postgres-pgvector:latest}
+    command: ["-c","max_connections=500","-c","idle_session_timeout=5000"]
+    restart: always
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-postgres}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    env_file:
+      - env/postgres.env
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-postgres}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB:-postgres}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
+  pgadmin:
+    build:
+      context: ./docker/pgadmin
+    image: ${PGADMIN_IMAGE:-local/prod-pgadmin:latest}
+    restart: always
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fsS http://localhost/ || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+    env_file:
+      - env/pgadmin.env
+    volumes:
+      - pgadmin_data:/var/lib/pgadmin
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  open-webui:
+    build:
+      context: ./docker/open-webui
+    image: ${OPENWEBUI_IMAGE:-local/prod-open-webui:latest}
+    restart: always
+    expose:
+      - "8080"
+    volumes:
+      - openwebui_data:/app/backend/data
+
+  n8n-import:
+    build:
+      context: ./docker/n8n
+    image: ${N8N_IMAGE:-local/prod-n8n:latest}
+    <<: *n8n_env
+    restart: "no"
+    entrypoint: ["/bin/sh","-lc"]
+    command:
+      - |
+        set -e
+        if [ -d /backup/credentials ] || [ -d /backup/workflows ]; then
+          echo "Running one-time n8n import from /backup..."
+          n8n import:credentials --separate --input=/backup/credentials || true
+          n8n import:workflow --separate --input=/backup/workflows || true
+        else
+          echo "No backup folder present; skipping n8n import."
+        fi
+    volumes:
+      - ./n8n/backup:/backup:ro
+
+  n8n:
+    build:
+      context: ./docker/n8n
+    image: ${N8N_IMAGE:-local/prod-n8n:latest}
+    <<: *n8n_env
+    restart: always
+    expose:
+      - "5678"
+    volumes:
+      - n8n_data:/home/node/.n8n
+      - ./shared:/data/shared
+    depends_on:
+      postgres:
+        condition: service_healthy
+      n8n-import:
+        condition: service_completed_successfully
+
+  # CPU-only Ollama
+  ollama:
+    profiles: ["cpu"]
+    build:
+      context: ./docker/ollama
+    image: ${OLLAMA_IMAGE:-local/prod-ollama:latest}
+    restart: always
+    expose:
+      - "11434"
+    environment:
+      OLLAMA_CONTEXT_LENGTH: "8192"
+      OLLAMA_FLASH_ATTENTION: "1"
+      OLLAMA_KV_CACHE_TYPE: q8_0
+      OLLAMA_MAX_LOADED_MODELS: "2"
+    volumes:
+      - ollama_data:/root/.ollama
+
+  # NVIDIA GPU Ollama
+  ollama-nvidia:
+    profiles: ["gpu-nvidia"]
+    build:
+      context: ./docker/ollama
+    image: ${OLLAMA_IMAGE:-local/prod-ollama:latest}
+    restart: always
+    expose:
+      - "11434"
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: 1
+              capabilities: [gpu]
+    environment:
+      OLLAMA_CONTEXT_LENGTH: "8192"
+      OLLAMA_FLASH_ATTENTION: "1"
+      OLLAMA_KV_CACHE_TYPE: q8_0
+      OLLAMA_MAX_LOADED_MODELS: "2"
+    volumes:
+      - ollama_data:/root/.ollama
+
+  # AMD GPU Ollama (ROCm)
+  ollama-amd:
+    profiles: ["gpu-amd"]
+    build:
+      context: ./docker/ollama
+    image: ${OLLAMA_AMD_IMAGE:-local/prod-ollama:rocm}
+    restart: always
+    expose:
+      - "11434"
+    devices:
+      - "/dev/kfd"
+      - "/dev/dri"
+    environment:
+      OLLAMA_CONTEXT_LENGTH: "8192"
+      OLLAMA_FLASH_ATTENTION: "1"
+      OLLAMA_KV_CACHE_TYPE: q8_0
+      OLLAMA_MAX_LOADED_MODELS: "2"
+    volumes:
+      - ollama_data:/root/.ollama
+
+  # One-time model pulls after Ollama starts
+  ollama-init:
+    profiles: ["cpu","gpu-nvidia","gpu-amd"]
+    build:
+      context: ./docker/ollama
+    image: ${OLLAMA_IMAGE:-local/prod-ollama:latest}
+    restart: "no"
+    entrypoint: ["/bin/sh","-lc"]
+    command:
+      - |
+        set -e
+        sleep 3
+        : "${OLLAMA_HOST:=ollama:11434}"
+        OLLAMA_HOST=${OLLAMA_HOST} ollama pull qwen2.5:7b-instruct-q4_K_M || true
+        OLLAMA_HOST=${OLLAMA_HOST} ollama pull nomic-embed-text || true
+    environment:
+      OLLAMA_HOST: ${OLLAMA_HOST:-}
+    volumes:
+      - ollama_data:/root/.ollama
+    depends_on:
+      postgres:
+        condition: service_started
+      n8n:
+        condition: service_started
+

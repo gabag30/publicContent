@@ -1,0 +1,15 @@
+# Env and secrets
+.env
+env/*.env
+prod/env/*.env
+
+# Local backups and data
+pgadmin-backup/
+n8n/backup/
+prod/backups/
+prod/ingress/letsencrypt/
+
+# Editor/OS clutter
+.DS_Store
+Thumbs.db
+*.swp

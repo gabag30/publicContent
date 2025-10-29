@@ -238,34 +238,11 @@
                 ],
                 "combinator": "and"
               }
-            },
-            {
-              "conditions": {
-                "options": {
-                  "caseSensitive": true,
-                  "leftValue": "",
-                  "typeValidation": "strict",
-                  "version": 1
-                },
-                "conditions": [
-                  {
-                    "id": "47a279a3-1f1a-4edf-9083-839a5fa19db3",
-                    "leftValue": "{{ $('Set File ID').item.json.file_type }}",
-                    "rightValue": "html",
-                    "operator": {
-                      "type": "string",
-                      "operation": "equals",
-                      "name": "filter.operator.equals"
-                    }
-                  }
-                ],
-                "combinator": "and"
-              }
             }
           ]
         },
         "options": {
-          "fallbackOutput": 3
+          "fallbackOutput": "none"
         }
       },
       "id": "658cba4d-69da-46a0-8170-00239093ec90",
@@ -434,7 +411,13 @@
       ],
       "id": "b000f302-b247-4284-98ba-b99fa43b642e",
       "name": "Insert Document Metadata",
-      "executeOnce": true
+      "executeOnce": true,
+      "credentials": {
+        "postgres": {
+          "id": "CkQIO2PwbUFUoUq4",
+          "name": "N8n account in postgres"
+        }
+      }
     },
     {
       "parameters": {
@@ -502,7 +485,13 @@
         480
       ],
       "id": "198980b0-a615-4289-82cc-10dbeb91da35",
-      "name": "Insert Table Rows"
+      "name": "Insert Table Rows",
+      "credentials": {
+        "postgres": {
+          "id": "CkQIO2PwbUFUoUq4",
+          "name": "N8n account in postgres"
+        }
+      }
     },
     {
       "parameters": {
@@ -590,7 +579,13 @@
         240
       ],
       "id": "1331709f-8d98-4288-8125-c3a7474e7e9c",
-      "name": "Update Schema for Document Metadata"
+      "name": "Update Schema for Document Metadata",
+      "credentials": {
+        "postgres": {
+          "id": "CkQIO2PwbUFUoUq4",
+          "name": "N8n account in postgres"
+        }
+      }
     },
     {
       "parameters": {
@@ -641,7 +636,13 @@
         688
       ],
       "id": "1746cdd9-a1c5-466d-8380-998263d9a41b",
-      "name": "Embeddings Ollama"
+      "name": "Embeddings Ollama",
+      "credentials": {
+        "ollamaApi": {
+          "id": "gzSUBMkJtyBMQ7UQ",
+          "name": "Ollama account"
+        }
+      }
     },
     {
       "parameters": {
@@ -672,7 +673,13 @@
         224
       ],
       "id": "21c561be-fef1-4718-ad7a-27eab188024d",
-      "name": "Delete Old Doc Records"
+      "name": "Delete Old Doc Records",
+      "credentials": {
+        "postgres": {
+          "id": "CkQIO2PwbUFUoUq4",
+          "name": "N8n account in postgres"
+        }
+      }
     },
     {
       "parameters": {
@@ -689,7 +696,13 @@
         368
       ],
       "id": "fb15b599-fc9a-4c20-9780-ba40b67ebd76",
-      "name": "Delete Old Data Records"
+      "name": "Delete Old Data Records",
+      "credentials": {
+        "postgres": {
+          "id": "CkQIO2PwbUFUoUq4",
+          "name": "N8n account in postgres"
+        }
+      }
     },
     {
       "parameters": {
@@ -704,7 +717,13 @@
         464
       ],
       "id": "ed8400ef-6255-4329-9e5c-30a5c9ca4bfc",
-      "name": "Postgres PGVector Store"
+      "name": "Postgres PGVector Store",
+      "credentials": {
+        "postgres": {
+          "id": "CkQIO2PwbUFUoUq4",
+          "name": "N8n account in postgres"
+        }
+      }
     },
     {
       "parameters": {
@@ -725,19 +744,6 @@
       "position": [
         160,
         208
-      ]
-    },
-    {
-      "parameters": {
-        "options": {}
-      },
-      "id": "5847dd37-6663-4211-9224-2ab741b9847c",
-      "name": "HTML Extract",
-      "type": "n8n-nodes-base.htmlExtract",
-      "typeVersion": 1,
-      "position": [
-        1984,
-        816
       ]
     }
   ],
@@ -840,13 +846,6 @@
         [
           {
             "node": "Extract Document Text",
-            "type": "main",
-            "index": 0
-          }
-        ],
-        [
-          {
-            "node": "HTML Extract",
             "type": "main",
             "index": 0
           }
@@ -1006,32 +1005,22 @@
           }
         ]
       ]
-    },
-    "HTML Extract": {
-      "main": [
-        [
-          {
-            "node": "Postgres PGVector Store",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
     }
   },
   "active": false,
   "settings": {
     "executionOrder": "v1"
   },
-  "versionId": "654f7ece-7e3c-4987-80d9-56e40789aba7",
+  "versionId": "e087b4b5-ce57-484e-9bab-e1d843b809d9",
   "meta": {
-    "instanceId": "45bb40c081e4b6f8f58a5ac67dbbde0b2f72076c359dec53a967f37020ce14bd"
+    "instanceId": "45bb40c081e4b6f8f58a5ac67dbbde0b2f72076c359dec53a967f37020ce14bd",
+    "templateCredsSetupCompleted": true
   },
   "id": "2c7hKkY7D3GeuUnk",
   "tags": [
     {
-      "createdAt": "2025-08-01T20:21:07.594Z",
       "updatedAt": "2025-08-01T20:21:07.594Z",
+      "createdAt": "2025-08-01T20:21:07.594Z",
       "id": "yJPIlhpdS7mxgQLp",
       "name": "documentation processing"
     }

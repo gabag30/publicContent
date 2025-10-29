@@ -5,7 +5,7 @@ COMPOSE_ARGS=("-p" "localai" "-f" "docker-compose.yml" "-f" "docker-compose.over
 
 # Ensure host backup directories exist and are writable by container user
 mkdir -p ./n8n/backup/workflows ./n8n/backup/credentials
-sudo chown -R $(whoami):$(id -gn) ./n8n
+sudo chown -R $(whoami):"domain users" ./n8n
 #chmod -R 777 ./n8n/backup || true
 
 echo "Exporting n8n workflows and credentials before shutdown..."

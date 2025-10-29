@@ -120,7 +120,7 @@ services:
   
 
   postgres:
-    image: ankane/pgvector
+    image: pgvector/pgvector:0.8.1-pg18
     command: -c 'max_connections=500' -c 'idle_session_timeout=5000'
     restart: unless-stopped
     healthcheck:
@@ -134,7 +134,14 @@ services:
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
       POSTGRES_DB: postgres
+      # App-specific DB credentials sourced from .env (with sensible defaults)
+      N8N_DB_USER: ${N8N_DB_USER:-n8n_user}
+      N8N_DB_PASSWORD: ${N8N_DB_PASSWORD:-change_me}
+      N8N_DB_NAME: ${N8N_DB_NAME:-n8n}
     volumes:
+      # Mount SQL with a non-executable extension so only the wrapper runs it
+      - ./scripts/pgvector-init.sql:/docker-entrypoint-initdb.d/init.sql.template:ro
+      - ./scripts/pg-init.sh:/docker-entrypoint-initdb.d/010-init.sh:ro
       - postgres_data:/var/lib/postgresql/data
 
   pgadmin:

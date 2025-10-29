@@ -1,0 +1,22 @@
+# Replace example.com with your domains and keep ports as-is
+
+n8n.example.com {
+  encode zstd gzip
+  reverse_proxy n8n:5678
+}
+
+chat.example.com {
+  encode zstd gzip
+  reverse_proxy open-webui:8080
+}
+
+ollama.example.com {
+  encode zstd gzip
+  reverse_proxy ollama:11434
+}
+
+pgadmin.example.com {
+  encode zstd gzip
+  reverse_proxy pgadmin:80
+}
+

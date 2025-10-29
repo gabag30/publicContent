@@ -1,0 +1,66 @@
+networks:
+  edge:
+    name: edge
+
+services:
+  traefik:
+    image: traefik:v2.11
+    restart: unless-stopped
+    command:
+      - --providers.docker=true
+      - --providers.docker.exposedbydefault=false
+      - --entrypoints.web.address=:80
+      - --entrypoints.websecure.address=:443
+      - --certificatesresolvers.le.acme.email=${TRAEFIK_ACME_EMAIL:?set TRAEFIK_ACME_EMAIL}
+      - --certificatesresolvers.le.acme.storage=/letsencrypt/acme.json
+      - --certificatesresolvers.le.acme.httpchallenge=true
+      - --certificatesresolvers.le.acme.httpchallenge.entrypoint=web
+    ports:
+      - 80:80
+      - 443:443
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - ./ingress/letsencrypt:/letsencrypt
+    networks:
+      - edge
+
+  n8n:
+    labels:
+      - traefik.enable=true
+      - traefik.http.routers.n8n.rule=Host(`${N8N_HOST}`)
+      - traefik.http.routers.n8n.entrypoints=websecure
+      - traefik.http.routers.n8n.tls.certresolver=le
+      - traefik.http.services.n8n.loadbalancer.server.port=5678
+    networks:
+      - edge
+
+  open-webui:
+    labels:
+      - traefik.enable=true
+      - traefik.http.routers.openwebui.rule=Host(`${OPENWEBUI_HOST}`)
+      - traefik.http.routers.openwebui.entrypoints=websecure
+      - traefik.http.routers.openwebui.tls.certresolver=le
+      - traefik.http.services.openwebui.loadbalancer.server.port=8080
+    networks:
+      - edge
+
+  ollama:
+    labels:
+      - traefik.enable=true
+      - traefik.http.routers.ollama.rule=Host(`${OLLAMA_HOSTNAME}`)
+      - traefik.http.routers.ollama.entrypoints=websecure
+      - traefik.http.routers.ollama.tls.certresolver=le
+      - traefik.http.services.ollama.loadbalancer.server.port=11434
+    networks:
+      - edge
+
+  pgadmin:
+    labels:
+      - traefik.enable=true
+      - traefik.http.routers.pgadmin.rule=Host(`${PGADMIN_HOST}`)
+      - traefik.http.routers.pgadmin.entrypoints=websecure
+      - traefik.http.routers.pgadmin.tls.certresolver=le
+      - traefik.http.services.pgadmin.loadbalancer.server.port=80
+    networks:
+      - edge
+
