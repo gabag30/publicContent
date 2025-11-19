@@ -7,6 +7,7 @@ volumes:
   # caddy-config:
   postgres_data:
   pgadmin_data:
+  shared_data:
 
 x-n8n: &service-n8n
   image: n8nio/n8n:latest
@@ -36,6 +37,9 @@ x-ollama: &service-ollama
     - OLLAMA_FLASH_ATTENTION=1
     - OLLAMA_KV_CACHE_TYPE=q8_0
     - OLLAMA_MAX_LOADED_MODELS=2
+    # Workaround: some networks / CF edges misbehave with HTTP/2
+    # Disable HTTP/2 in Go client used by Ollama
+    - GODEBUG=http2client=0
   volumes:
     - ollama_storage:/root/.ollama
     - ./selfSignedCertificate/sampleCert.pem:/usr/local/share/ca-certificates/sampleCert.crt:ro
@@ -54,6 +58,8 @@ x-init-ollama: &init-ollama
   volumes:
     - ollama_storage:/root/.ollama
     - ./selfSignedCertificate/sampleCert.pem:/usr/local/share/ca-certificates/sampleCert.crt:ro
+  environment:
+    - GODEBUG=http2client=0
   entrypoint: /bin/sh
   command:
     - "-c"
@@ -67,6 +73,25 @@ x-init-ollama: &init-ollama
       OLLAMA_HOST=ollama:11434 ollama pull nomic-embed-text
 
 services:
+  shared-init:
+    image: alpine:3.20
+    container_name: shared-init
+    entrypoint: ["sh","-lc"]
+    command:
+      - |
+        set -e
+        if [ -d /source ] && [ "$(ls -A /source 2>/dev/null)" ]; then
+          echo "Copying shared files into volume..."
+          cp -a /source/. /dest/
+        else
+          echo "No files found in /source; skipping copy."
+        fi
+        # Ensure n8n (uid 1000) can fully access them
+        chown -R 1000:1000 /dest || true
+        chmod -R u+rwX /dest || true
+    volumes:
+      - shared_data:/dest
+      - ./shared:/source:ro
   pgadmin-restore:
     image: alpine:3.20
     entrypoint: ["sh","-lc"]
@@ -112,9 +137,12 @@ services:
     volumes:
       - n8n_storage:/home/node/.n8n
       - ./n8n/backup:/backup
-      - ./shared:/data/shared
+      - shared_data:/data/shared
     depends_on:
       n8n-import:
+        condition: service_started
+        restart: false
+      shared-init:
         condition: service_completed_successfully
 
   
@@ -142,7 +170,9 @@ services:
       # Mount SQL with a non-executable extension so only the wrapper runs it
       - ./scripts/pgvector-init.sql:/docker-entrypoint-initdb.d/init.sql.template:ro
       - ./scripts/pg-init.sh:/docker-entrypoint-initdb.d/010-init.sh:ro
-      - postgres_data:/var/lib/postgresql/data
+      # Postgres 18+: mount at /var/lib/postgresql (not .../data)
+      # See: https://github.com/docker-library/postgres/pull/1259
+      - postgres_data:/var/lib/postgresql
 
   pgadmin:
     image: dpage/pgadmin4:latest

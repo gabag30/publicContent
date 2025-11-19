@@ -1,0 +1,14 @@
+{
+  "account": "",
+  "region": "",
+  "ecs": {
+    "instanceType": "t2.micro",
+    "desiredCapacity": 1,
+    "maxCapacity": 2
+  },
+  "persistence": {
+    "useEfs": true
+  },
+  "namespace": "local"
+}
+
