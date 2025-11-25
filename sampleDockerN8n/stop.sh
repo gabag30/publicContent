@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -e
 
-COMPOSE_ARGS=("-p" "localai" "-f" "docker-compose.yml" "-f" "docker-compose.override.private.yml" "--profile" "cpu")
+COMPOSE_ARGS=("-p" "localai" "-f" "docker-compose.yml" "-f" "docker-compose.override.private.yml" "--profile" "none")
 
 # Ensure host backup directories exist and are writable by container user
 mkdir -p ./n8n/backup/workflows ./n8n/backup/credentials
