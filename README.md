@@ -1,3 +1,4 @@
+claude --resume 8b845e9e-96bf-432d-b163-b3f610b97675
 # publicContent
 
 A collection of sample projects, infrastructure templates, and personal scripts shared publicly.
@@ -15,4 +16,3 @@ A collection of sample projects, infrastructure templates, and personal scripts 
 ## License
 
 See [LICENSE](LICENSE).
-
